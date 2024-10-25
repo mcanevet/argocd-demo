@@ -1,0 +1,32 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: argocd
+spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: enable_argocd
+              operator: In
+              values: ['true']
+  template:
+    metadata:
+      annotations:
+        argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true
+      name: argocd
+    spec:
+      project: default
+      sources:
+        - chart: argo-cd
+          repoURL: https://argoproj.github.io/argo-helm
+          targetRevision: 7.6.12
+      destination:
+        namespace: argocd
+        server: '{{server}}'
+      syncPolicy:
+        syncOptions:
+          - ServerSideApply=true
