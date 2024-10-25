@@ -1,0 +1,52 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cilium
+spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: enable_cilium
+              operator: In
+              values: ['true']
+  template:
+    metadata:
+      annotations:
+        argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true
+      name: cilium
+    spec:
+      project: default
+      sources:
+        - chart: cilium
+          repoURL: https://helm.cilium.io/
+          targetRevision: 1.16.3
+          helm:
+            valuesObject:
+              ipam:
+                mode: kubernetes
+              kubeProxyReplacement: true
+              operator:
+                replicas: 1
+              securityContext:
+                capabilities:
+                  ciliumAgent: ["CHOWN", "KILL", "NET_ADMIN", "NET_RAW", "IPC_LOCK", "SYS_ADMIN", "SYS_RESOURCE", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+                  cleanCiliumState: ["NET_ADMIN", "SYS_ADMIN", "SYS_RESOURCE"]
+              cgroup:
+                autoMount:
+                  enabled: false
+                hostRoot: "/sys/fs/cgroup"
+              k8sServiceHost: "localhost"
+              k8sServicePort: 7445
+      destination:
+        namespace: kube-system
+        server: '{{server}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
