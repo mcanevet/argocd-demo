@@ -28,5 +28,8 @@ spec:
         namespace: argocd
         server: '{{server}}'
       syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
         syncOptions:
           - ServerSideApply=true
